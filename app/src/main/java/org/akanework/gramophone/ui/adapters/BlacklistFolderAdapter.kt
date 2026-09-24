@@ -15,10 +15,10 @@ import org.akanework.gramophone.logic.ui.MyRecyclerView
 class BlacklistFolderAdapter(
     private val fragment: Fragment,
     private val folderArray: MutableList<String>,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val preferenceKey: String
 ) : MyRecyclerView.Adapter<BlacklistFolderAdapter.ViewHolder>() {
-    private val folderFilter =
-        prefs.getStringSetStrict("folderFilter", null)?.toMutableSet() ?: mutableSetOf()
+    private val folderFilter = prefs.getStringSetStrict(preferenceKey, null)?.toMutableSet() ?: mutableSetOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         ViewHolder(
@@ -42,7 +42,7 @@ class BlacklistFolderAdapter(
         holder.checkBox.setOnClickListener {
             prefs.edit {
                 putStringSet(
-                    "folderFilter",
+                    preferenceKey,
                     folderFilter.also {
                         if (holder.checkBox.isChecked)
                             it.add(folderArray[position])

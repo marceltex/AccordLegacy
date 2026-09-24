@@ -506,7 +506,7 @@ class FullBottomSheet @JvmOverloads constructor(
 
         bottomSheetStarButton.addOnCheckedChangeListener { _, b ->
             if (!favouriteLock) {
-                val mediaId = instance?.currentMediaItem?.mediaId?.toLong()
+                val mediaId = instance?.currentMediaItem?.mediaId?.let(MediaStoreUtils::mediaStoreId)
                     ?: return@addOnCheckedChangeListener
                 CoroutineScope(Dispatchers.Main).launch {
                     if (b) {
@@ -538,7 +538,7 @@ class FullBottomSheet @JvmOverloads constructor(
 
         bottomSheetStarButtonPlaylist.addOnCheckedChangeListener { _, b ->
             if (!favouriteLock) {
-                val mediaId = instance?.currentMediaItem?.mediaId?.toLong()
+                val mediaId = instance?.currentMediaItem?.mediaId?.let(MediaStoreUtils::mediaStoreId)
                     ?: return@addOnCheckedChangeListener
                 CoroutineScope(Dispatchers.Main).launch {
                     if (b) {
@@ -1269,7 +1269,8 @@ class FullBottomSheet @JvmOverloads constructor(
         queryFavouriteJob?.cancel()
         queryFavouriteJob = CoroutineScope(Dispatchers.Main)
         queryFavouriteJob!!.launch {
-            val mediaId = instance?.currentMediaItem?.mediaId?.toLong() ?: return@launch
+            val mediaId = instance?.currentMediaItem?.mediaId?.let(MediaStoreUtils::mediaStoreId)
+                ?: return@launch
             favouriteLock = true
             val isFav = DatabaseUtils.isFavourite(mediaId, activity.libraryViewModel)
             val targetRes = if (isFav)

@@ -46,7 +46,7 @@ class LibraryAlbumSubFragment : BaseFragment(), Observer<List<PlaylistWithMediaI
         }!!
 
         val filteredAndSortedList = playlist.mediaItems.mapNotNull { id ->
-            libraryViewModel.mediaItemList.value!!.find { it.mediaId.toLong() == id.mediaItemId }
+            libraryViewModel.mediaItemList.value!!.find { org.akanework.gramophone.logic.utils.MediaStoreUtils.mediaStoreId(it.mediaId) == id.mediaItemId }
         }
 
         // Show title text.
@@ -85,7 +85,7 @@ class LibraryAlbumSubFragment : BaseFragment(), Observer<List<PlaylistWithMediaI
             songAdapter.updateList(
                 it1.mediaItems.mapNotNull { mediaItem ->
                     libraryViewModel.mediaItemList.value
-                        ?.find { it2 -> it2.mediaId.toLong() == mediaItem.mediaItemId }
+                        ?.find { it2 -> org.akanework.gramophone.logic.utils.MediaStoreUtils.mediaStoreId(it2.mediaId) == mediaItem.mediaItemId }
                 },
                 now = false,
                 canDiff = true

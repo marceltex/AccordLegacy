@@ -120,7 +120,7 @@ class LibraryFragment : BaseFragment(null), Observer<List<PlaylistWithMediaItem>
         libraryViewModel.privateAlbumList.add(PlaceHolder())
 
         CoroutineScope(Dispatchers.IO).launch {
-            val mediaItemMap = libraryViewModel.mediaItemList.value?.associateBy { it.mediaId.toLong() }
+            val mediaItemMap = libraryViewModel.mediaItemList.value?.associateBy { MediaStoreUtils.mediaStoreId(it.mediaId) }
             val albumItemMap = libraryViewModel.albumItemList.value?.associateBy { it.title }
 
             libraryViewModel.privatePlaylistList.value

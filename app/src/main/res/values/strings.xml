@@ -147,6 +147,7 @@
     <string name="settings_play_on_launch">Play on launch</string>
     <string name="settings_play_on_launch_summary">Play music on launch</string>
     <string name="settings_blacklist">Blacklist</string>
+    <string name="settings_whitelist">Whitelist</string>
     <string name="settings_blacklist_folder_summary">Filter songs from certain folders</string>
     <string name="settings_blacklist_folder">Blacklist folders</string>
     <string name="settings_category_basic_info">Basic info</string>

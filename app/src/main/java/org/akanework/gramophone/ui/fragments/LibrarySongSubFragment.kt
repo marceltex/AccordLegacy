@@ -47,7 +47,7 @@ class LibrarySongSubFragment : BaseFragment(), Observer<List<PlaylistWithMediaIt
         }!!
 
         val filteredAndSortedList = playlist.mediaItems.mapNotNull { id ->
-            libraryViewModel.mediaItemList.value!!.find { it.mediaId.toLong() == id.mediaItemId }
+            libraryViewModel.mediaItemList.value!!.find { org.akanework.gramophone.logic.utils.MediaStoreUtils.mediaStoreId(it.mediaId) == id.mediaItemId }
         }
 
         // Show title text.
@@ -82,7 +82,7 @@ class LibrarySongSubFragment : BaseFragment(), Observer<List<PlaylistWithMediaIt
 
     override fun onChanged(value: List<PlaylistWithMediaItem>)  {
         val measureTime = measureTimeMillis {
-            val mediaItemMap = libraryViewModel.mediaItemList.value?.associateBy { it.mediaId.toLong() }
+            val mediaItemMap = libraryViewModel.mediaItemList.value?.associateBy { org.akanework.gramophone.logic.utils.MediaStoreUtils.mediaStoreId(it.mediaId) }
 
             val favouritePlaylist = value.find { it1 -> it1.playlist.name == "favourite" }
             favouritePlaylist?.let { it1 ->

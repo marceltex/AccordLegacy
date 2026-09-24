@@ -19,10 +19,12 @@ package org.akanework.gramophone.ui
 
 import android.app.NotificationManager
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.view.Choreographer
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -41,6 +43,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.preference.PreferenceManager
 import coil3.imageLoader
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
@@ -82,6 +85,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var intentSender: ActivityResultLauncher<IntentSenderRequest>
     lateinit var bottomNavigationView: BottomNavigationView
     private var intentSenderAction: (() -> Boolean)? = null
+    private val libraryObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        private var refreshQueued = false
+        override fun onChange(selfChange: Boolean) = onChange(selfChange, null)
+        override fun onChange(selfChange: Boolean, uri: android.net.Uri?) {
+            if (refreshQueued || libraryViewModel.mediaItemList.value == null) return
+            refreshQueued = true
+            handler.postDelayed({
+                refreshQueued = false
+                updateLibrary()
+            }, 700)
+        }
+    }
+    private val preferencesListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "mediastore_filter" || key == "folderBlacklist" || key == "folderWhitelist" || key == "album_covers")
+            updateLibrary()
+    }
 
     private lateinit var container: FragmentContainerView
 
@@ -198,6 +217,19 @@ class MainActivity : AppCompatActivity() {
                 }
             } else reportFullyDrawn() // <-- when recreating activity due to rotation
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, libraryObserver)
+        contentResolver.registerContentObserver(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, true, libraryObserver)
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(preferencesListener)
+    }
+
+    override fun onStop() {
+        contentResolver.unregisterContentObserver(libraryObserver)
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(preferencesListener)
+        super.onStop()
     }
 
     // https://twitter.com/Piwai/status/1529510076196630528

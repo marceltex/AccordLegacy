@@ -318,7 +318,16 @@ object MediaStoreUtils {
         val haveImgPerm = if (hasScopedStorageWithMediaTypes()) context.hasImagePermission() else
             prefs.getBoolean("album_covers", false)
         val coverUri = "content://media/external/audio/albumart".toUri()
-        val folderFilter = prefs.getStringSet("folderFilter", setOf()) ?: setOf()
+        val blackList = prefs.getStringSet("folderBlacklist", setOf()) ?: setOf()
+        val whiteList = prefs.getStringSet("folderWhitelist", setOf()) ?: setOf()
+        val volumeRoots = context.getSystemService(android.os.storage.StorageManager::class.java)
+            .storageVolumes.mapNotNull { it.directory?.absolutePath }
+        fun normalizeFolders(input: Set<String>): Set<String> = input.flatMap { folder ->
+            if (folder.startsWith('/')) listOf(File(folder).absolutePath)
+            else volumeRoots.map { File(it, folder).absolutePath }
+        }.toSet()
+        val blackListPaths = normalizeFolders(blackList)
+        val whiteListPaths = normalizeFolders(whiteList)
 
         // Initialize list and maps.
         val coverCache = if (haveImgPerm) hashMapOf<Long, Pair<File, FileNode>>() else null
@@ -449,10 +458,19 @@ object MediaStoreUtils {
                 val duration = it.getLongOrNull(durationColumn)
                 val pathFile = File(path)
                 val fldPath = pathFile.parentFile!!.absolutePath
-                val skip =
-                    (duration != null && duration < limitValue * 1000) || folderFilter.contains(
-                        fldPath
-                    )
+                folders.add(fldPath)
+                fun containsPath(paths: Set<String>): Boolean {
+                    var current: File? = pathFile
+                    while (current != null) {
+                        if (current.absolutePath in paths) return true
+                        current = current.parentFile
+                    }
+                    return false
+                }
+                val whitelisted = whiteListPaths.isEmpty() || containsPath(whiteListPaths)
+                val blacklisted = !whitelisted || containsPath(blackListPaths)
+                val skip = (duration != null && duration != 0L && duration < limitValue * 1000) ||
+                    fldPath == "/" || blacklisted
                 // We need to add blacklisted songs to idMap as they can be referenced by playlist
                 if (skip && !foundPlaylistContent) continue
                 val id = it.getLongOrNull(idColumn)!!
@@ -508,8 +526,8 @@ object MediaStoreUtils {
                 // Build our mediaItem.
                 val song = MediaItem
                     .Builder()
-                    .setUri(pathFile.toUri())
-                    .setMediaId(id.toString())
+                    .setUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id))
+                    .setMediaId("MediaStore:$id")
                     .setMimeType(mimeType)
                     .setMediaMetadata(
                         MediaMetadata
@@ -691,7 +709,8 @@ object MediaStoreUtils {
                 recentlyAddedMap
             )
         )
-        folders.addAll(folderFilter)
+        folders.addAll(blackList)
+        folders.addAll(whiteList)
         return LibraryStoreClass(
             songs,
             albumList,
@@ -735,9 +754,11 @@ object MediaStoreUtils {
         }
     }
 
+    fun mediaStoreId(mediaId: String): Long = mediaId.removePrefix("MediaStore:").toLong()
+
     private fun dummyMediaItem(id: Long, title: String): MediaItem {
         return MediaItem.Builder()
-            .setMediaId(id.toString())
+            .setMediaId("MediaStore:$id")
             .setMediaMetadata(
                 MediaMetadata
                     .Builder()
@@ -751,10 +772,10 @@ object MediaStoreUtils {
     fun deleteSong(context: Context, item: MediaItem):
             Pair<Boolean, () -> (() -> Pair<IntentSender?, () -> Boolean>)> {
         val uri = ContentUris.withAppendedId(
-            MediaStore.Audio.Media.getContentUri("external"), item.mediaId.toLong()
+            MediaStore.Audio.Media.getContentUri("external"), mediaStoreId(item.mediaId)
         )
         val selector = "${MediaStore.Images.Media._ID} = ?"
-        val id = arrayOf(item.mediaId)
+        val id = arrayOf(mediaStoreId(item.mediaId).toString())
         if (hasScopedStorageV2() && context.checkUriPermission(
                 uri, Binder.getCallingPid(), Binder.getCallingUid(),
                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION

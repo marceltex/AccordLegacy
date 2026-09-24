@@ -9,6 +9,7 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.appbar.MaterialToolbar
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
@@ -39,7 +40,17 @@ class BlacklistSettingsFragment : BaseFragment() {
 
         val recyclerView = rootView.findViewById<RecyclerView>(R.id.recyclerview)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = BlacklistFolderAdapter(this, folderArray, prefs)
+        var preferenceKey = "folderBlacklist"
+        val toggle = MaterialButton(requireContext()).apply {
+            text = getString(R.string.settings_blacklist)
+            setOnClickListener {
+                preferenceKey = if (preferenceKey == "folderBlacklist") "folderWhitelist" else "folderBlacklist"
+                text = if (preferenceKey == "folderBlacklist") getString(R.string.settings_blacklist) else getString(R.string.settings_whitelist)
+                recyclerView.adapter = BlacklistFolderAdapter(this@BlacklistSettingsFragment, folderArray, prefs, preferenceKey)
+            }
+        }
+        rootView.findViewById<AppBarLayout>(R.id.appbarlayout).addView(toggle)
+        recyclerView.adapter = BlacklistFolderAdapter(this, folderArray, prefs, preferenceKey)
 
         return rootView
     }

@@ -43,7 +43,7 @@ class RecommendationFactory(
             val genreList = libraryViewModel.genreItemList.value ?: return Pair(0, emptyList())
             val index = genreList.indices.random()
             val genre = genreList[index]
-            val genreIndexList = genre.songList.shuffled().take(4).map { it.mediaId.toLong() }
+            val genreIndexList = genre.songList.shuffled().take(4).map { MediaStoreUtils.mediaStoreId(it.mediaId) }
             return Pair(index, genreIndexList)
         }
     }
@@ -53,7 +53,7 @@ class RecommendationFactory(
             val artistList = libraryViewModel.artistItemList.value ?: return Pair(0, emptyList())
             val index = artistList.indices.random()
             val artist = artistList[index]
-            val artistIndexList = artist.songList.shuffled().take(4).map { it.mediaId.toLong() }
+            val artistIndexList = artist.songList.shuffled().take(4).map { MediaStoreUtils.mediaStoreId(it.mediaId) }
             return Pair(index, artistIndexList)
         }
     }
@@ -115,7 +115,7 @@ class RecommendationFactory(
             else -> null
         }?.getOrNull(rawRecommendList.recommendationObjectId)?.songList ?: emptyList()
 
-        val finalMediaItemList = objectList.filter { it.mediaId.toLong() in rawRecommendList.recommendationList }
+        val finalMediaItemList = objectList.filter { MediaStoreUtils.mediaStoreId(it.mediaId) in rawRecommendList.recommendationList }
 
         return RecommendList(
             rawRecommendList.recommendationType,
