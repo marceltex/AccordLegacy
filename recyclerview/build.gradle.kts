@@ -21,7 +21,7 @@ plugins {
 
 android {
     namespace = "androidx.recyclerview"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 19
@@ -59,15 +59,15 @@ kotlin {
 }
 
 dependencies {
-    api("androidx.annotation:annotation:1.9.1")
+    api("androidx.annotation:annotation:1.11.0")
     //noinspection KtxExtensionAvailable
-    api("androidx.core:core:1.15.0")
+    api("androidx.core:core:1.19.1")
     //noinspection KtxExtensionAvailable,GradleDependency
-    implementation("androidx.collection:collection:1.4.5")
-    api("androidx.customview:customview:1.1.0")
-    implementation("androidx.customview:customview-poolingcontainer:1.0.0")
+    implementation("androidx.collection:collection:1.6.0")
+    api("androidx.customview:customview:1.2.0")
+    implementation("androidx.customview:customview-poolingcontainer:1.1.0")
 
     constraints {
-        implementation("androidx.viewpager2:viewpager2:1.0.0")
+        implementation("androidx.viewpager2:viewpager2:1.1.0")
     }
 }

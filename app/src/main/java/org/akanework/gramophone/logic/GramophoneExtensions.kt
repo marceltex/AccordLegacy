@@ -613,7 +613,7 @@ fun MaterialToolbar.applyGeneralMenuItem(
                     snackBar.setActionTextColor(
                         MaterialColors.getColor(
                             snackBar.view,
-                            com.google.android.material.R.attr.colorPrimary,
+                            androidx.appcompat.R.attr.colorPrimary,
                         ),
                     )
                     snackBar.setTextColor(
