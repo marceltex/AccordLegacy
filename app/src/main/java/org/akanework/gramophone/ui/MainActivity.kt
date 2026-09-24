@@ -49,6 +49,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.enableEdgeToEdgeProperly
 import org.akanework.gramophone.logic.postAtFrontOfQueueAsync
@@ -85,6 +86,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var intentSender: ActivityResultLauncher<IntentSenderRequest>
     lateinit var bottomNavigationView: BottomNavigationView
     private var intentSenderAction: (() -> Boolean)? = null
+    private var libraryUpdateInProgress = false
+    private var libraryUpdatePending = false
     private val libraryObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         private var refreshQueued = false
         override fun onChange(selfChange: Boolean) = onChange(selfChange, null)
@@ -93,13 +96,13 @@ class MainActivity : AppCompatActivity() {
             refreshQueued = true
             handler.postDelayed({
                 refreshQueued = false
-                updateLibrary()
+                requestLibraryRefresh()
             }, 700)
         }
     }
     private val preferencesListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == "mediastore_filter" || key == "folderBlacklist" || key == "folderWhitelist" || key == "album_covers")
-            updateLibrary()
+            requestLibraryRefresh()
     }
 
     private lateinit var container: FragmentContainerView
@@ -109,14 +112,51 @@ class MainActivity : AppCompatActivity() {
      *   Calls [updateLibraryWithInCoroutine] in MediaStoreUtils and updates library.
      */
     fun updateLibrary(then: (() -> Unit)? = null) {
+        if (libraryUpdateInProgress) {
+            libraryUpdatePending = true
+            return
+        }
+        libraryUpdateInProgress = true
         // If library load takes more than 3s, exit splash to avoid ANR
         if (!ready) handler.postDelayed(reportFullyDrawnRunnable, 3000)
         CoroutineScope(Dispatchers.Default).launch {
-            updateLibraryWithInCoroutine(libraryViewModel, this@MainActivity) {
-                if (!ready) reportFullyDrawn()
-                then?.let { it() }
+            var callback = then
+            var completed = false
+            try {
+                var repeat: Boolean
+                do {
+                    withContext(Dispatchers.Main.immediate) {
+                        libraryUpdatePending = false
+                    }
+                    updateLibraryWithInCoroutine(libraryViewModel, this@MainActivity) {
+                        if (!ready) reportFullyDrawn()
+                        callback?.let { it() }
+                        callback = null
+                    }
+                    repeat = withContext(Dispatchers.Main.immediate) {
+                        if (libraryUpdatePending) true else {
+                            libraryUpdateInProgress = false
+                            false
+                        }
+                    }
+                } while (repeat)
+                completed = true
+            } finally {
+                if (!completed) {
+                    withContext(Dispatchers.Main.immediate) {
+                        libraryUpdateInProgress = false
+                        if (libraryUpdatePending) {
+                            libraryUpdatePending = false
+                            requestLibraryRefresh()
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private fun requestLibraryRefresh() {
+        if (libraryUpdateInProgress) libraryUpdatePending = true else updateLibrary()
     }
 
     /**

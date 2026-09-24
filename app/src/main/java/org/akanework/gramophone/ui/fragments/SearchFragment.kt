@@ -19,8 +19,6 @@ package org.akanework.gramophone.ui.fragments
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,8 +32,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.applyGeneralMenuItem
 import org.akanework.gramophone.logic.enableEdgeToEdgePaddingListener
@@ -51,9 +51,8 @@ import org.akanework.gramophone.ui.adapters.SongAdapter
  * @author AkaneTan
  */
 class SearchFragment : BaseFragment(null) {
-    private val handler = Handler(Looper.getMainLooper())
     private val libraryViewModel: LibraryViewModel by activityViewModels()
-    private val filteredList: MutableList<MediaItem> = mutableListOf()
+    private var searchJob: Job? = null
     private lateinit var editText: EditText
 
     @SuppressLint("StringFormatInvalid", "StringFormatMatches")
@@ -92,35 +91,36 @@ class SearchFragment : BaseFragment(null) {
         // Build FastScroller.
         recyclerView.fastScroll(songAdapter, songAdapter.itemHeightHelper)
 
-        editText.addTextChangedListener { rawText ->
-            // TODO sort results by match quality? (using NaturalOrderHelper)
-            if (rawText.isNullOrBlank()) {
-                songAdapter.updateList(listOf(), now = true, true)
+        fun updateSearchResults(query: String, songs: List<MediaItem>?) {
+            val text = query.trim()
+            searchJob?.cancel()
+            if (text.isBlank()) {
+                songAdapter.updateList(songs.orEmpty(), now = true, true)
             } else {
-                // make sure the user doesn't edit away our text while we are filtering
-                val text = rawText.toString()
-                // Launch a coroutine for searching in the library.
-                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-                    // Clear the list from the last search.
-                    filteredList.clear()
-                    // Filter the library.
-                    libraryViewModel.mediaItemList.value?.filter {
+                searchJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+                    val filteredList = songs.orEmpty().filter {
                         val isMatchingTitle = it.mediaMetadata.title?.contains(text, true) == true
                         val isMatchingAlbum =
                             it.mediaMetadata.albumTitle?.contains(text, true) == true
                         val isMatchingArtist =
                             it.mediaMetadata.artist?.contains(text, true) == true
                         isMatchingTitle || isMatchingAlbum || isMatchingArtist
-                    }?.let {
-                        filteredList.addAll(
-                            it
-                        )
                     }
-                    handler.post {
-                        songAdapter.updateList(filteredList, now = true, true)
+                    withContext(Dispatchers.Main) {
+                        if (editText.text.toString().trim() == text) {
+                            songAdapter.updateList(filteredList, now = true, true)
+                        }
                     }
                 }
             }
+        }
+
+        editText.addTextChangedListener { rawText ->
+            // TODO sort results by match quality? (using NaturalOrderHelper)
+            updateSearchResults(rawText?.toString().orEmpty(), libraryViewModel.mediaItemList.value)
+        }
+        libraryViewModel.mediaItemList.observe(viewLifecycleOwner) { songs ->
+            updateSearchResults(editText.text.toString(), songs)
         }
 
         topAppBar.applyGeneralMenuItem(this, libraryViewModel)

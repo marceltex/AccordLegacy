@@ -34,12 +34,12 @@ import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
+import androidx.media3.common.HeartRating
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.preference.PreferenceManager
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import org.akanework.gramophone.R
 import org.akanework.gramophone.logic.getColumnIndexOrNull
@@ -284,6 +284,7 @@ object MediaStoreUtils {
         val projection =
             arrayListOf(
                 MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.DISPLAY_NAME,
                 MediaStore.Audio.Media.TITLE,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media.ARTIST_ID,
@@ -422,6 +423,7 @@ object MediaStoreUtils {
         cursor?.use {
             // Get columns from mediaStore.
             val idColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+            val displayNameColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
             val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
             val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val albumColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
@@ -474,7 +476,10 @@ object MediaStoreUtils {
                 // We need to add blacklisted songs to idMap as they can be referenced by playlist
                 if (skip && !foundPlaylistContent) continue
                 val id = it.getLongOrNull(idColumn)!!
-                val title = it.getStringOrNull(titleColumn)!!
+                val displayName = it.getStringOrNull(displayNameColumn)
+                val title = it.getStringOrNull(titleColumn)?.takeIf(String::isNotBlank)
+                    ?: displayName?.substringBeforeLast('.', displayName)?.ifBlank { displayName }
+                    ?: pathFile.nameWithoutExtension
                 val artist = it.getStringOrNull(artistColumn)
                     .let { v -> if (v == "<unknown>") null else v }
                 val album = it.getStringOrNull(albumColumn)
@@ -534,8 +539,11 @@ object MediaStoreUtils {
                             .Builder()
                             .setIsBrowsable(false)
                             .setIsPlayable(true)
+                            .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                            .setDurationMs(duration)
                             .setTitle(title)
                             .setWriter(writer)
+                            .setAuthor(author)
                             .setCompilation(compilation)
                             .setComposer(composer)
                             .setArtist(artist)
@@ -549,6 +557,7 @@ object MediaStoreUtils {
                             .setRecordingMonth(dateTakenMonth)
                             .setRecordingYear(dateTakenYear)
                             .setReleaseYear(year)
+                            .setUserRating(HeartRating(false))
                             .setExtras(Bundle().apply {
                                 if (artistId != null) {
                                     putLong("ArtistId", artistId)
@@ -725,13 +734,13 @@ object MediaStoreUtils {
         )
     }
 
-    fun updateLibraryWithInCoroutine(
+    suspend fun updateLibraryWithInCoroutine(
         libraryViewModel: LibraryViewModel,
         context: Context,
         then: (() -> Unit)?
     ) {
         val pairObject = getAllSongs(context)
-        CoroutineScope(Dispatchers.Main).launch {
+        withContext(Dispatchers.Main.immediate) {
             libraryViewModel.mediaItemList.value = pairObject.songList
             libraryViewModel.albumItemList.value = pairObject.albumList
             libraryViewModel.artistItemList.value = pairObject.artistList
