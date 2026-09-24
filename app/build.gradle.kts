@@ -6,7 +6,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    kotlin("android")
+    id("com.android.built-in-kotlin")
     kotlin("plugin.parcelize")
     id("com.google.devtools.ksp")
 }
@@ -18,7 +18,7 @@ android {
     }
 
     namespace = "org.akanework.gramophone"
-    compileSdk = 36
+    compileSdk = 37
     buildToolsVersion = "36.0.0"
     ndkVersion = "28.0.13004108"
 
@@ -57,7 +57,7 @@ android {
         // for it for a while.
         // Bye bye android 12 - cuz blur
         minSdk = 31
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 18
         versionName = "beta2"
         buildConfigField(
@@ -70,7 +70,6 @@ android {
             "RELEASE_TYPE",
             "\"$releaseType\""
         )
-        setProperty("archivesBaseName", "Accord-$versionName")
     }
 
     signingConfigs {
@@ -159,6 +158,10 @@ kotlin {
     }
 }
 
+base {
+    archivesName = "Accord-${android.defaultConfig.versionName}"
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -170,7 +173,7 @@ configurations.configureEach {
 }
 
 dependencies {
-    val media3Version = "1.6.0-rc01"
+    val media3Version = "1.10.1"
     val roomVersion = "2.7.0-rc02"
 
     ksp("androidx.room:room-compiler:$roomVersion")

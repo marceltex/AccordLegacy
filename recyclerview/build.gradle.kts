@@ -16,7 +16,7 @@
 
 plugins {
     id("com.android.library")
-    kotlin("android")
+    id("com.android.built-in-kotlin")
 }
 
 android {
@@ -34,9 +34,11 @@ android {
         }
     }
 
-    sourceSets.getByName("main") {
-        res.srcDirs("res")
-        res.srcDirs("res-public")
+    sourceSets {
+        getByName("main") {
+            res.directories += "res"
+            res.directories += "res-public"
+        }
     }
 
     publishing {
