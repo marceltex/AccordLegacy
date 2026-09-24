@@ -44,7 +44,7 @@ Append one short entry per completed or blocked phase, with date, commit(s) if a
 |---|---|---|
 | 1 | Complete | 2026-09-23: Inspected clean Accord `alpha` and Gramophone `beta` checkouts, manifests/build files, current reader/storage/playback/lyrics/search sources, and history. Inventory committed as Accord `36896a3f` in `AccordLegacy/docs/migration/phase-1-feature-inventory.md`; matrix below is the planning summary. Research only; no app code changed. Follow-up: Phase 2 must establish Accord's build baseline before ports. |
 | 2 | Complete | 2026-09-24: Implemented on `migration/phase-2-build-baseline`, commit `f4993a55`; fast-forwarded into `feature/migration`. Baseline before changes passed `assembleDebug` and `testDebugUnitTest` after creating the documented ignored local `package.properties` with `releaseType=SelfBuilt`; corrected the README example because its quoted value is rejected by the build. User selected compile/target SDK 37, so upgraded Gradle 9.4.1, AGP 9.2.1, built-in Kotlin/KGP 2.3.0, KSP 2.3.12, and published Media3 1.10.1; Accord remains Java 17, minSdk 31, applicationId `uk.akane.accord`. Added the required Android SDK components to CI, updated the Gradle distribution checksum, and migrated RecyclerView resource source-set DSL for AGP 9.2.1. Checks passed: `./gradlew help`; `./gradlew build --dry-run`; `./gradlew assembleDebug testDebugUnitTest assembleRelease`; all with `releaseType=SelfBuilt`. API 37 emulator smoke test also passed: debug APK launched, displayed the music/audio permission prompt, accepted the grant, rendered Accord Home, remained running, and showed no AndroidRuntime errors. Compiler deprecation/nullability warnings remain noted in the build output. |
-| 3 | In progress | 2026-09-24: Work on `migration/phase-3-library-browse` is committed and pushed (`967a4856`, `119cf695`, `6c5abe6a`). Accord now uses Gramophone-style `MediaStore:<id>` IDs/content URIs, independent ancestor-aware black/white folder filters, duration filtering, title fallback and selected metadata fields; refreshes are debounced/coalesced, and search observes refreshed library data with upstream-compatible blank-query results. Build/test passed: `./gradlew :app:assembleDebug`, `./gradlew :app:testDebugUnitTest`; `git diff --check` passed. API 37 `Pixel_10_Pro_XL` fresh-install runtime checks passed for audio permission, scan/rescan after media additions, duration/filter behavior, browse categories, sort selection, title/blank search and live search refresh; final AndroidRuntime log was empty. Follow-up implementation remains before completion: port Gramophone's CD-track/filename track-number fallback and album-artist inference; make the scan robust to missing parent paths and unavailable external volumes; and align observer lifetime/refresh behavior with upstream's application-scoped reader. Cover-permission behavior and API 31/API 33-specific permission paths also remain unverified (runtime testing was API 37; image permission was not granted). Accord's existing screens/models and Phase 4 Room-backed playlist/favorite persistence are intentionally retained. |
+| 3 | In progress | 2026-09-24: Initial work is committed and pushed on `migration/phase-3-library-browse` (`967a4856`, `119cf695`, `6c5abe6a`, `bb07b746`). Implemented MediaStore IDs/content URIs, title fallback and selected metadata, folder filtering, coalesced refresh and live/blank search. Build/tests passed (`:app:assembleDebug`, `:app:testDebugUnitTest`); API 37 `Pixel_10_Pro_XL` verified fresh install, scan/rescan, duration and folder filters, browse, sort selection, and search. Remaining tasks and exact fixture/runtime requirements are listed under “Phase 3 outstanding implementation and verification.” Do not start Phase 4. |
 | 4 | Not started | |
 | 5 | Not started | |
 | 6 | Not started | |
@@ -124,6 +124,40 @@ Phase 1 fills this table with concise source locations, disposition, and verific
 4. Port only the permissions, manifest entries, resources, and platform-version guards required by the adopted library behavior. Playlist/favorite persistence is Phase 4.
 
 **Complete when:** Accord can scan and rescan local media, apply the adopted filters/blacklists, and display/search/sort the supported library categories through its existing UI. Verify on API 31+ and record test/build results. Playlist/favorite actions may still use the pre-existing implementation until Phase 4.
+
+### Phase 3 outstanding implementation and verification
+
+The earlier implementation pass did not complete all current Gramophone reader parity. Continue on the Phase 3 branch and compare against the current `Gramophone/beta` checkout before each port. Keep Accord's existing Activities, Fragments, adapters and styling; keep Room-backed playlist/favorite persistence for Phase 4.
+
+#### Implementation still required
+
+1. **Track metadata fallback:** In Gramophone `app/src/main/java/uk/akane/libphonograph/reader/Reader.kt`, port the current fallback behavior to Accord's `MediaStoreUtils`:
+   - When `CD_TRACK_NUMBER` exists but `TRACK` is absent, use the numeric CD track value as the track number.
+   - When no track number remains, recognize the upstream filename pattern such as `03.Track title.ext`; apply the same metadata/title guard as upstream so a filename prefix is not duplicated when the title already begins with that track number.
+   - Preserve upstream disc/track normalization for MediaStore's combined `1001`-style values.
+2. **Album-artist inference:** Port the current `MiscUtils.findBestAlbumArtist` behavior for each album instead of taking the first song's `ALBUM_ARTIST ?: ARTIST` value. Preserve the upstream consistency rules for mixed/null album-artist tags, the majority-artist fallback threshold, and the corresponding artist ID. Rebuild Accord's album-artist grouping from the resolved album artist so album lists and song lists agree.
+3. **Scan failure guards:** Match upstream handling for rows whose path has no usable parent and for the race where the external-primary MediaStore volume disappears between checking and querying. These cases must skip the unusable row or return an empty reader result as appropriate, not crash through `parentFile!!` or an uncaught `IllegalArgumentException`.
+4. **Refresh lifecycle:** Accord currently registers the `ContentObserver` and preference listener from `MainActivity.onStart` and unregisters them in `onStop`; Gramophone's `FlowReader` observes from an application-owned scope. Make Accord detect library changes made while its Activity is stopped, without starting overlapping scans. Explicitly verify the API 30/Android 11 playlist-notification case if public MediaStore playlists are refreshed through this observer; use Gramophone's current workaround only if the observed API behavior requires it.
+5. **Cover-access parity:** Compare Accord's `album_covers`/image-permission path and folder cover selection with current Gramophone `Reader` behavior. Keep permission-aware enhanced reading and basic album artwork behavior correct on both API 31–32 and API 33+. Add or change manifest/UI permission handling only when the compared behavior requires it.
+
+#### Verification still required
+
+Create and install a small emulator fixture library with known metadata; the prior tests used short system OGG sounds and cannot verify album-artist inference or track fallbacks. Keep test files on the emulator, not in the app source tree. Include:
+
+- At least one multi-track album with consistent `ALBUM_ARTIST`, one with absent/mixed album-artist tags, and distinct song artists sufficient to exercise upstream's inference threshold and ID selection.
+- A track with `TRACK` absent and numeric `CD_TRACK_NUMBER`; a filename-prefixed track with no usable number metadata; and a title that already starts with the filename number to exercise the no-duplicate guard. Include a multi-disc/combined track-number example.
+- At least two folders with multiple songs, nested folders, and a cover image beside an album. Use these to exercise empty filters, blacklist, whitelist, nested/overlapping paths, and enhanced-cover permission behavior.
+- Songs both shorter and longer than the configured minimum duration.
+
+Then verify and record:
+
+1. Fresh-install audio permission behavior and scan results on API 31/32 (`READ_EXTERNAL_STORAGE`) and API 33+ (`READ_MEDIA_AUDIO`). Verify the image-permission denied and granted paths on API 33+; confirm basic artwork still behaves when enhanced image reading is unavailable.
+2. Track/disc numbers, title fallback, album artist/name/ID, album grouping, and cover selection against the fixture's known metadata.
+3. Scan/rescan after adding, changing, and removing media. Exercise a change while the app is foregrounded and while it is stopped, then return to Accord; verify no overlapping refresh crash and no stale browse/search results.
+4. Empty and non-empty case-insensitive title/album/artist search, and representative saved sort modes across songs and categories. Verify songs, albums, artists, genres, dates, folders/filesystem through Accord's current screens.
+5. Missing-path and unavailable-volume behavior using a focused test/harness where the emulator cannot create those MediaStore states naturally. Record exactly which API levels and cases were exercised.
+
+**Phase 3 completion gate:** all five implementation items above are resolved or explicitly shown to be equivalent to current Accord behavior with source evidence; the fixture checks pass on the specified API groups; `./gradlew :app:assembleDebug` and `./gradlew :app:testDebugUnitTest` pass; and the outcomes are recorded here before changing the tracker to Complete. Existing API 37 checks above are evidence for the already-passed cases, not a substitute for these outstanding checks.
 
 ## Phase 4 — Gramophone storage for playlists and favorites
 
