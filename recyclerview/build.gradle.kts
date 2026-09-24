@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.android.library")
-    id("com.android.built-in-kotlin")
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.agp.kotlin)
 }
 
 android {
@@ -59,15 +59,15 @@ kotlin {
 }
 
 dependencies {
-    api("androidx.annotation:annotation:1.11.0")
+    api(libs.androidx.annotation)
     //noinspection KtxExtensionAvailable
-    api("androidx.core:core:1.19.1")
+    api(libs.androidx.core)
     //noinspection KtxExtensionAvailable,GradleDependency
-    implementation("androidx.collection:collection:1.6.0")
-    api("androidx.customview:customview:1.2.0")
-    implementation("androidx.customview:customview-poolingcontainer:1.1.0")
+    implementation(libs.androidx.collection)
+    api(libs.androidx.customview)
+    implementation(libs.androidx.customview.poolingcontainer)
 
     constraints {
-        implementation("androidx.viewpager2:viewpager2:1.1.0")
+        implementation(libs.androidx.viewpager2)
     }
 }

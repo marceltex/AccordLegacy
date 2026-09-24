@@ -1,0 +1,64 @@
+[versions]
+agp = "9.4.1"
+androidx-activity = "1.13.0"
+androidx-annotation = "1.11.0"
+androidx-appcompat = "1.8.0"
+androidx-collection = "1.6.0"
+androidx-concurrent = "1.3.0"
+androidx-constraintlayout = "2.2.2"
+androidx-core = "1.19.1"
+androidx-customview = "1.2.0"
+androidx-customview-poolingcontainer = "1.1.0"
+androidx-fragment = "1.9.1"
+androidx-lifecycle = "2.11.0"
+androidx-preference = "1.2.1"
+androidx-splashscreen = "1.2.0"
+androidx-transition = "1.7.2"
+androidx-viewpager2 = "1.1.0"
+coil = "3.6.3"
+fastscroll = "1.3.0"
+flexbox = "3.0.0"
+junit = "4.13.2"
+kotlin = "2.3.21"
+ksp = "2.3.12"
+leakcanary = "2.14"
+material = "1.14.0"
+media3 = "1.11.1"
+room = "2.8.5"
+
+[libraries]
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-collection = { module = "androidx.collection:collection", version.ref = "androidx-collection" }
+androidx-concurrent-futures-ktx = { module = "androidx.concurrent:concurrent-futures-ktx", version.ref = "androidx-concurrent" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }
+androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
+androidx-customview = { module = "androidx.customview:customview", version.ref = "androidx-customview" }
+androidx-customview-poolingcontainer = { module = "androidx.customview:customview-poolingcontainer", version.ref = "androidx-customview-poolingcontainer" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "androidx-fragment" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidx-lifecycle" }
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+androidx-media3-exoplayer-midi = { module = "androidx.media3:media3-exoplayer-midi", version.ref = "media3" }
+androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
+androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "androidx-preference" }
+androidx-transition-ktx = { module = "androidx.transition:transition-ktx", version.ref = "androidx-transition" }
+androidx-viewpager2 = { module = "androidx.viewpager2:viewpager2", version.ref = "androidx-viewpager2" }
+coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
+fastscroll = { module = "me.zhanghai.android.fastscroll:library", version.ref = "fastscroll" }
+flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
+junit = { module = "junit:junit", version.ref = "junit" }
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+
+[plugins]
+agp-kotlin = { id = "com.android.built-in-kotlin", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

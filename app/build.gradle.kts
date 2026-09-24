@@ -5,10 +5,10 @@ import org.jetbrains.kotlin.util.removeSuffixIfPresent
 import java.util.Properties
 
 plugins {
-    id("com.android.application")
-    id("com.android.built-in-kotlin")
-    kotlin("plugin.parcelize")
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.agp.kotlin)
+    alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -173,34 +173,31 @@ configurations.configureEach {
 }
 
 dependencies {
-    val media3Version = "1.11.1"
-    val roomVersion = "2.8.5"
-
-    ksp("androidx.room:room-compiler:$roomVersion")
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    implementation("androidx.core:core-ktx:1.19.1")
-    implementation("androidx.activity:activity-ktx:1.13.0")
-    implementation("androidx.concurrent:concurrent-futures-ktx:1.3.0")
-    implementation("androidx.transition:transition-ktx:1.7.2") // <-- for predictive back
-    implementation("androidx.fragment:fragment-ktx:1.9.1")
-    implementation("androidx.core:core-splashscreen:1.2.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
-    implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.2.2")
-    implementation("androidx.media3:media3-exoplayer:$media3Version")
-    implementation("androidx.media3:media3-exoplayer-midi:$media3Version")
-    implementation("androidx.media3:media3-session:$media3Version")
-    implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("com.google.android.material:material:1.14.0")
-    implementation("com.google.android.flexbox:flexbox:3.0.0")
-    implementation("me.zhanghai.android.fastscroll:library:1.3.0")
-    implementation("io.coil-kt.coil3:coil:3.6.3")
+    ksp(libs.room.compiler)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.concurrent.futures.ktx)
+    implementation(libs.androidx.transition.ktx) // <-- for predictive back
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.exoplayer.midi)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.preference.ktx)
+    implementation(libs.material)
+    implementation(libs.flexbox)
+    implementation(libs.fastscroll)
+    implementation(libs.coil)
     implementation(files("../libs/lib-decoder-ffmpeg-release.aar"))
     implementation(projects.recyclerview)
     // --- below does not apply to release builds ---
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
-    testImplementation("junit:junit:4.13.2")
+    debugImplementation(libs.leakcanary.android)
+    testImplementation(libs.junit)
 }
 
 fun String.runCommand(
