@@ -166,6 +166,20 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen().setKeepOnScreenCondition { !ready }
         enableEdgeToEdgeProperly()
         super.onCreate(savedInstanceState)
+        contentResolver.registerContentObserver(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, libraryObserver
+        )
+        contentResolver.registerContentObserver(
+            MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, true, libraryObserver
+        )
+        if (android.os.Build.VERSION.SDK_INT == android.os.Build.VERSION_CODES.R) {
+            // Android 11 does not reliably notify changes through the public playlists URI.
+            contentResolver.registerContentObserver(
+                MediaStore.Files.getContentUri("external"), true, libraryObserver
+            )
+        }
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .registerOnSharedPreferenceChangeListener(preferencesListener)
         autoPlay = intent?.extras?.getBoolean(PLAYBACK_AUTO_START_FOR_FGS, false) == true
         intentSender =
             registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
@@ -261,15 +275,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, libraryObserver)
-        contentResolver.registerContentObserver(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, true, libraryObserver)
-        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(preferencesListener)
-    }
-
-    override fun onStop() {
-        contentResolver.unregisterContentObserver(libraryObserver)
-        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(preferencesListener)
-        super.onStop()
+        if (libraryViewModel.mediaItemList.value != null) requestLibraryRefresh()
     }
 
     // https://twitter.com/Piwai/status/1529510076196630528
@@ -337,6 +343,9 @@ class MainActivity : AppCompatActivity() {
 
     @OptIn(UnstableApi::class)
     override fun onDestroy() {
+        contentResolver.unregisterContentObserver(libraryObserver)
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(preferencesListener)
         // https://github.com/androidx/media/issues/805
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.UPSIDE_DOWN_CAKE
             && (getPlayer()?.playWhenReady != true || getPlayer()?.mediaItemCount == 0)
